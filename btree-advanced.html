@@ -3,6 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Interactive B-Tree visualization with dynamic pseudo-code execution. Learn data structures through animated operations.">
+    <meta name="keywords" content="B-Tree, data structures, visualization, algorithm, computer science, education">
+    <meta name="author" content="B-Tree Visualization Project">
+    <meta property="og:title" content="B-Tree Advanced Visualization">
+    <meta property="og:description" content="Interactive B-Tree visualization with dynamic pseudo-code execution">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="B-Tree Advanced Visualization">
+    <meta name="twitter:description" content="Interactive B-Tree visualization with dynamic pseudo-code execution">
+    
+    <!-- Favicon and app icons -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌳</text></svg>">
+    
     <title>B-Tree Advanced Visualization | t=3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -483,6 +497,19 @@
         .code-function { color: #60a5fa; }
         .code-string { color: #86efac; }
         .code-comment { color: #64748b; }
+        .code-number { color: #fbbf24; }
+        .code-variable { color: #f87171; }
+        .code-current-line { 
+            background: rgba(251, 191, 36, 0.2); 
+            border-left: 3px solid #fbbf24;
+            padding-left: 8px;
+            animation: lineHighlight 0.5s ease-in-out;
+        }
+        
+        @keyframes lineHighlight {
+            from { background: rgba(251, 191, 36, 0.4); }
+            to { background: rgba(251, 191, 36, 0.2); }
+        }
 
         .complexity-panel {
             background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
@@ -610,7 +637,11 @@
                 </div>
             </div>
             <div class="flex items-center gap-3">
-                <button onclick="toggleTheme()" class="btn btn-primary">
+                <button onclick="showDeploymentInfo()" class="btn btn-primary" title="Deployment Instructions">
+                    <i class="fas fa-rocket"></i>
+                    Deploy
+                </button>
+                <button onclick="toggleTheme()" class="btn btn-primary" title="Toggle Theme">
                     <i class="fas fa-moon"></i>
                     Theme
                 </button>
@@ -779,10 +810,8 @@
 
             <div id="pseudocode" class="code-block">
                 <div><span class="code-comment">// Ready for operations</span></div>
-                <div><span class="code-keyword">function</span> <span class="code-function">START</span>():</div>
-                <div>  Insert or delete keys</div>
-                <div>  Watch animations</div>
-                <div>  Observe B-tree properties</div>
+                <div><span class="code-function">START</span>()</div>
+                <div>Insert or delete keys to begin...</div>
             </div>
 
             <div class="panel-header">
@@ -1183,22 +1212,42 @@
 
             async animateInsert(key) {
                 this.addStep('start', `Inserting key ${key}`, `Starting insertion process`);
-                this.updatePseudocode('insert', key);
+                await this.updateDynamicPseudocode('insert', key, 'start');
                 this.highlightComplexity('insert');
+                
+                // Step 1: Check if root is full
+                await this.updateDynamicPseudocode('insert', key, 'check_root');
+                await this.sleep(this.animationSpeed / 2);
                 
                 // Highlight search path
                 const searchPath = this.findSearchPath(key);
                 await this.highlightPath(searchPath);
                 
+                // Step 2: Find insertion position
+                await this.updateDynamicPseudocode('insert', key, 'find_position');
+                await this.sleep(this.animationSpeed / 2);
+                
                 // Perform insertion
                 const result = this.btree.insert(key);
-                await this.animateInsertResult(result);
+                
+                // Step 3: Handle insertion result
+                if (result.type === 'split') {
+                    await this.updateDynamicPseudocode('insert', key, 'split_node');
+                    await this.animateSplit(result);
+                } else if (result.type === 'inserted_leaf') {
+                    await this.updateDynamicPseudocode('insert', key, 'insert_leaf');
+                    await this.animateLeafInsert(result);
+                } else if (result.type === 'new_root') {
+                    await this.updateDynamicPseudocode('insert', key, 'new_root');
+                    await this.animateNewRoot(result);
+                }
                 
                 // Update visualization
                 this.visualizeTree();
                 this.updateStatistics();
                 this.updateComplexityInfo();
                 
+                await this.updateDynamicPseudocode('insert', key, 'complete');
                 this.addStep('complete', `Key ${key} inserted`, `Insertion completed successfully`);
                 this.showNotification(`Key ${key} inserted successfully`, 'success');
                 document.getElementById('lastOp').textContent = `Insert ${key}`;
@@ -1206,22 +1255,42 @@
 
             async animateDelete(key) {
                 this.addStep('start', `Deleting key ${key}`, `Starting deletion process`);
-                this.updatePseudocode('delete', key);
+                await this.updateDynamicPseudocode('delete', key, 'start');
                 this.highlightComplexity('delete');
+                
+                // Step 1: Find the key
+                await this.updateDynamicPseudocode('delete', key, 'find_key');
+                await this.sleep(this.animationSpeed / 2);
                 
                 // Highlight search path
                 const searchPath = this.findSearchPath(key);
                 await this.highlightPath(searchPath);
                 
-                // Perform deletion
+                // Step 2: Perform deletion
+                await this.updateDynamicPseudocode('delete', key, 'delete_start');
                 const result = this.btree.delete(key);
-                await this.animateDeleteResult(result);
+                
+                // Step 3: Handle deletion result
+                if (result.type === 'deleted_leaf') {
+                    await this.updateDynamicPseudocode('delete', key, 'delete_leaf');
+                    await this.animateLeafDelete(result);
+                } else if (result.type === 'borrowed_left' || result.type === 'borrowed_right') {
+                    await this.updateDynamicPseudocode('delete', key, 'borrow');
+                    await this.animateBorrow(result);
+                } else if (result.type === 'merged') {
+                    await this.updateDynamicPseudocode('delete', key, 'merge');
+                    await this.animateMerge(result);
+                } else if (result.type === 'root_collapsed') {
+                    await this.updateDynamicPseudocode('delete', key, 'root_collapse');
+                    await this.animateRootCollapse(result);
+                }
                 
                 // Update visualization
                 this.visualizeTree();
                 this.updateStatistics();
                 this.updateComplexityInfo();
                 
+                await this.updateDynamicPseudocode('delete', key, 'complete');
                 this.addStep('complete', `Key ${key} deleted`, `Deletion completed successfully`);
                 this.showNotification(`Key ${key} deleted successfully`, 'success');
                 document.getElementById('lastOp').textContent = `Delete ${key}`;
@@ -1513,33 +1582,112 @@
                 document.getElementById('nodeCount').textContent = this.btree.getNodeCount();
             }
 
-            updatePseudocode(operation, data = null) {
+            async updateDynamicPseudocode(operation, data = null, step = 'start') {
                 const container = document.getElementById('pseudocode');
                 
-                let pseudocode = '';
+                const pseudoSteps = {
+                    insert: {
+                        start: [
+                            `// Inserting key: ${data}`,
+                            `INSERT(${data})`,
+                            `Starting insertion process...`
+                        ],
+                        check_root: [
+                            `// Check if root is full`,
+                            `if root.isFull(): split root`,
+                            `Prepare for insertion...`
+                        ],
+                        find_position: [
+                            `// Find insertion position`,
+                            `traverse to correct leaf`,
+                            `locate position for ${data}...`
+                        ],
+                        insert_leaf: [
+                            `// Insert into leaf node`,
+                            `node.keys.insert(${data})`,
+                            `Key added successfully!`
+                        ],
+                        split_node: [
+                            `// Node is full - split required`,
+                            `promote middle key up`,
+                            `create new sibling node...`
+                        ],
+                        new_root: [
+                            `// Create new root`,
+                            `root = new Node()`,
+                            `Tree height increased!`
+                        ],
+                        complete: [
+                            `// Insertion complete`,
+                            `Key ${data} inserted`,
+                            `Tree rebalanced successfully`
+                        ]
+                    },
+                    delete: {
+                        start: [
+                            `// Deleting key: ${data}`,
+                            `DELETE(${data})`,
+                            `Starting deletion process...`
+                        ],
+                        find_key: [
+                            `// Find key to delete`,
+                            `traverse to locate ${data}`,
+                            `searching tree structure...`
+                        ],
+                        delete_start: [
+                            `// Begin deletion`,
+                            `DELETE_FROM_NODE(root, ${data})`,
+                            `Processing deletion...`
+                        ],
+                        delete_leaf: [
+                            `// Delete from leaf`,
+                            `node.keys.remove(${data})`,
+                            `Key removed from leaf`
+                        ],
+                        borrow: [
+                            `// Node has too few keys`,
+                            `borrow from sibling`,
+                            `redistribute keys...`
+                        ],
+                        merge: [
+                            `// Cannot borrow - merge required`,
+                            `merge with sibling`,
+                            `combine nodes...`
+                        ],
+                        root_collapse: [
+                            `// Root became empty`,
+                            `root = root.children[0]`,
+                            `Tree height decreased!`
+                        ],
+                        complete: [
+                            `// Deletion complete`,
+                            `Key ${data} deleted`,
+                            `Tree rebalanced successfully`
+                        ]
+                    }
+                };
                 
-                switch(operation) {
-                    case 'insert':
-                        pseudocode = `
-                            <div><span class="code-comment">// Inserting key: ${data}</span></div>
-                            <div><span class="code-keyword">function</span> <span class="code-function">INSERT</span>(key):</div>
-                            <div>  <span class="code-keyword">if</span> root <span class="code-keyword">is full</span>: split root</div>
-                            <div>  INSERT_NON_FULL(root, key)</div>
-                            <div>  <span class="code-keyword">if</span> node <span class="code-keyword">is full</span>: split node</div>
-                        `;
-                        break;
-                    case 'delete':
-                        pseudocode = `
-                            <div><span class="code-comment">// Deleting key: ${data}</span></div>
-                            <div><span class="code-keyword">function</span> <span class="code-function">DELETE</span>(key):</div>
-                            <div>  DELETE_FROM_NODE(root, key)</div>
-                            <div>  <span class="code-keyword">if</span> node.keys < MIN_KEYS:</div>
-                            <div>    borrow <span class="code-keyword">or</span> merge with sibling</div>
-                        `;
-                        break;
-                }
+                const steps = pseudoSteps[operation] || pseudoSteps.insert;
+                const currentLines = steps[step] || steps.start;
+                
+                // Build HTML with syntax highlighting
+                let pseudocode = currentLines.map(line => 
+                    `<div>${this.highlightSyntax(line)}</div>`
+                ).join('');
                 
                 container.innerHTML = pseudocode;
+            }
+            
+            highlightSyntax(line) {
+                // Syntax highlighting for pseudo-code
+                return line
+                    .replace(/\/\/.*$/g, '<span class="code-comment">$&</span>')
+                    .replace(/\b(function|if|else|while|for|return|new|this|null|true|false)\b/g, '<span class="code-keyword">$1</span>')
+                    .replace(/\b([A-Z_][A-Z0-9_]*)\(/g, '<span class="code-function">$1</span>(')
+                    .replace(/\b(key|node|parent|child|idx|i|mid|newRoot|fullChild|newNode|promotedKey|pred|succ|leftChild|rightChild|leftSibling|rightSibling)\b/g, '<span class="code-variable">$1</span>')
+                    .replace(/\b(\d+)\b/g, '<span class="code-number">$1</span>')
+                    .replace(/'([^']*)'/g, '<span class="code-string">\'$1\'</span>')
+                    .replace(/"([^"]*)"/g, '<span class="code-string">"$1"</span>');
             }
 
             addStep(type, title, description) {
@@ -1819,6 +1967,41 @@
             } else {
                 document.body.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
             }
+        }
+
+        // Simple local server for testing
+        function startLocalServer() {
+            if (typeof window.require === 'undefined') {
+                alert('To run locally:\\n1. Open this file in a browser directly, or\\n2. Use Python: python -m http.server 8000\\n3. Or use Node: npx serve .\\n\\nThen open http://localhost:8000/btree-advanced.html');
+                return;
+            }
+        }
+
+        // Deployment instructions
+        function showDeploymentInfo() {
+            const info = `
+🌳 B-Tree Visualization - Deployment Options:
+
+1️⃣ GitHub Pages (Free):
+   • Upload to GitHub repository
+   • Settings > Pages > Enable
+   • Deploy from main branch
+
+2️⃣ Netlify (Free):
+   • Go to netlify.com/drop
+   • Drag & drop this file
+
+3️⃣ Vercel (Free):
+   • Install: npm i -g vercel
+   • Run: vercel --prod
+
+4️⃣ Any Web Hosting:
+   • Upload btree-advanced.html
+   • Access directly via URL
+
+The file is self-contained and ready for deployment!
+            `;
+            alert(info.trim());
         }
     </script>
 </body>
